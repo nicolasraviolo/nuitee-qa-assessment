@@ -27,7 +27,7 @@ export class LiteApiClient {
       }
     });
     
-    // Debug: Si falla, queremos ver por qué
+    // Debug
     if (!response.ok()) {
       console.log('Error GetHotels:', await response.text());
     }
@@ -45,11 +45,11 @@ export class LiteApiClient {
         checkout: checkout,
         occupancies: [{ adults: 2, children: [] }],
         currency: "USD",
-        guestNationality: "US" // <--- ¡AGREGAR ESTO! (Requisito común en Travel APIs)
+        guestNationality: "US" 
       }
     });
 
-    // Debugging Vital: Si falla (400), imprime el mensaje de error del servidor
+    // Debugging Vital: if 400, prints error details
     if (!response.ok()) {
         console.log(`Error GetRates (${response.status()}):`, await response.text());
     }
@@ -63,7 +63,7 @@ export class LiteApiClient {
     const response = await this.request.post(`${this.baseUrl}/rates/prebook`, {
       headers: await this.getHeaders(),
       data: { 
-        offerId: rateId  // <--- ¡CAMBIO AQUÍ! (Antes decía 'rateId')
+        offerId: rateId  
       }
     });
 
@@ -87,12 +87,12 @@ export class LiteApiClient {
             email: "qa@example.com"
         },
         payment: {
-            method: "ACC_CREDIT_CARD" // Método especial para Sandbox
+            method: "ACC_CREDIT_CARD"
         }
       }
     });
 
-    // --- NUEVO LOGGING ---
+    // Debugging Vital: if not ok, prints error details
     if (!response.ok()) {
       console.log(`Error Book (${response.status()}):`, await response.text());
     }

@@ -1,14 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { LiteApiClient } from '../lib/api/LiteApiClient';
+import { LiteApiClient } from '../../lib/api/LiteApiClient';
 
 test.describe('Part 1: LiteAPI Real Workflow', () => {
-  // Ya no necesitamos declarar 'api' afuera si lo usamos solo dentro del test
-  // pero para mantener tu estructura de steps, lo haremos así:
 
   test('E2E Booking Lifecycle (Live Sandbox)', async ({ request }) => { // <--- 1. Inyectamos 'request' AQUÍ
     
-    // 2. Inicializamos el cliente DENTRO del test. 
-    // Esto asegura que usamos el contexto fresco de esta ejecución.
     const api = new LiteApiClient(request); 
 
     let hotelId: string;
@@ -35,9 +31,6 @@ test.describe('Part 1: LiteAPI Real Workflow', () => {
       
       expect(response.data).toBeDefined();
       
-      // --- CORRECCIÓN AQUÍ ---
-      // Antes: rateId = response.data[0].roomTypes[0].rates[0].rateId;
-      // Ahora: Extraemos el 'offerId' que está al nivel de roomTypes
       rateId = response.data[0].roomTypes[0].offerId; 
       
       console.log(`Found Offer ID: ${rateId.substring(0, 20)}...`);

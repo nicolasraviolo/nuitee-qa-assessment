@@ -9,9 +9,6 @@ export class HomePage {
   constructor(page: Page) {
     this.page = page;
 
-    // --- CAMBIO CRÍTICO AQUÍ ---
-    // Dejamos de usar getByPlaceholder porque a veces falla en este sitio.
-    // Usamos getByRole que coincide con lo que vimos en tu Snapshot.
     this.searchInput = page.getByRole('combobox', { name: 'Enter a destination' });
     
     this.searchButton = page.getByRole('button', { name: 'Search' });
@@ -22,7 +19,7 @@ export class HomePage {
     await this.page.goto('https://v3.nuitee.link/');
     await expect(this.page).toHaveURL(/v3.nuitee.link/);
 
-    // Manejo de Cookies (Ya vimos que funciona, pero lo dejamos seguro)
+   //cookies
     try {
       if (await this.acceptCookiesButton.isVisible({ timeout: 5000 })) {
         await this.acceptCookiesButton.click();
@@ -34,14 +31,14 @@ export class HomePage {
   }
 
   async searchHotel(city: string) {
-    // Hacemos click primero para asegurar el foco (Best Practice para comboboxes)
+    // click to ensure focus
     await this.searchInput.click();
     
-    // Escribimos despacio para dar tiempo a que el JS de la web reaccione
+    
     await this.searchInput.pressSequentially(city, { delay: 100 });
 
-    // Esperamos a que aparezca la opción en el dropdown
-    // Buscamos específicamente la opción que contenga el texto de la ciudad
+    // wait for options to load
+    // search for the option that matches the city
     const option = this.page.getByRole('option').filter({ hasText: city }).first();
     
     await option.waitFor({ state: 'visible', timeout: 10000 });
