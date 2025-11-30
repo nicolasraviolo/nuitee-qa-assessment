@@ -16,9 +16,10 @@ export class HomePage {
     this.searchButton = page.getByRole('button', { name: 'Search' });
     this.acceptCookiesButton = page.getByRole('button', { name: 'Accept' });
     
-    // Resilience: Using a text locator for the empty state message.
-    // We use a flexible match to catch "No results found" or similar variations.
-    this.noResultsMessage = page.locator('text=No results found');
+    // --- AQUÍ ESTÁ EL CAMBIO ---
+    // Fix: The page has multiple elements with this text (one hidden for a11y).
+    // We target the Heading element which is the visible message for the user.
+    this.noResultsMessage = page.getByRole('heading', { name: 'No results found' });
   }
 
   /**
@@ -31,7 +32,6 @@ export class HomePage {
     await expect(this.page).toHaveURL(/v3.nuitee.link/);
 
     // Defensive Coding: Handle Cookie Banner
-    // The banner might not appear if the session is reused or in some geographical regions.
     try {
       if (await this.acceptCookiesButton.isVisible({ timeout: 3000 })) {
         await this.acceptCookiesButton.click();
@@ -71,8 +71,7 @@ export class HomePage {
   }
   
   async verifyMobileLayout() {
-      // Simple check to verify responsiveness (e.g., checking if a hamburger menu exists)
-      // For this specific site, we verify that the layout didn't break.
+      // Simple check to verify responsiveness
       await expect(this.searchInput).toBeVisible();
   }
 }
