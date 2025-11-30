@@ -21,7 +21,7 @@ export class HomePage {
    */
   async navigate() {
     await this.page.goto('https://v3.nuitee.link/');
-    
+
     // Validate URL to ensure we are on the right environment
     await expect(this.page).toHaveURL(/v3.nuitee.link/);
 
@@ -44,42 +44,46 @@ export class HomePage {
    * @param expectResults - Boolean flag. If true, waits for autosuggest. If false, just types.
    */
   async searchHotel(city: string, expectResults: boolean = true) {
-    // Ensure focus
-    await this.searchInput.click();
-    
-    // Type with delay to trigger JS event listeners for autocomplete
-    await this.searchInput.pressSequentially(city, { delay: 100 });
+    await this.performSearchType(city);
 
     if (expectResults) {
-        // Happy Path: Wait for the suggestion dropdown and click the first match
-        const option = this.page.getByRole('option').filter({ hasText: city }).first();
-        await option.waitFor({ state: 'visible', timeout: 10000 });
-        await option.click();
+
+      const option = this.page.getByRole('option').filter({ hasText: city }).first();
+
+
+      await option.click();
     } else {
-        // Edge Case: Just hit Enter if we don't expect valid suggestions (or testing invalid input)
-        await this.page.keyboard.press('Enter');
+      await this.page.keyboard.press('Enter');
     }
+  }
+
+  private async performSearchType(city: string) {
+    await this.searchInput.click();
+    await this.searchInput.fill('');
+    await this.searchInput.pressSequentially(city, { delay: 100 });
   }
 
   async clickSearch() {
     await this.searchButton.click();
   }
-  
-async verifyMobileLayout() {
-      // We verify the text is visible to the user.
-      await expect(this.page.getByText('Enter a destination')).toBeVisible();
-      
-      // Verify search button is also visible
-      await expect(this.searchButton).toBeVisible();
+
+  async verifyMobileLayout() {
+    // We verify the text is visible to the user.
+    await expect(this.page.getByText('Enter a destination')).toBeVisible();
+
+    // Verify search button is also visible
+    await expect(this.searchButton).toBeVisible();
   }
-async selectFirstResult() {
-    // Strategy: Find the first anchor tag that links to a hotel detail page
-    const firstHotelCard = this.page.locator('a[href*="/hotels/"]').first();
-    
-    // Wait for the list to populate and the element to be interactive
-    await firstHotelCard.waitFor({ state: 'visible', timeout: 15000 });
-    
-    // Click to navigate
-    await firstHotelCard.click();
+  /**
+     * Selects the first hotel from the results list.
+     */
+  async selectFirstResult() {
+    const firstHotelTitle = this.page.locator('a[href*="/hotels/"] h3').first();
+
+    // Wait for the specific element we want to click
+    await firstHotelTitle.waitFor({ state: 'visible', timeout: 30000 });
+
+    // Click the title to navigate
+    await firstHotelTitle.click();
   }
 }
