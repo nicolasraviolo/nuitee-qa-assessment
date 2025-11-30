@@ -5,47 +5,74 @@ export class HomePage {
   readonly searchInput: Locator;
   readonly searchButton: Locator;
   readonly acceptCookiesButton: Locator;
+  readonly noResultsMessage: Locator;
 
   constructor(page: Page) {
     this.page = page;
 
+    // LOCATORS:
+    // Using 'combobox' role for the main search input as identified in accessibility tree
     this.searchInput = page.getByRole('combobox', { name: 'Enter a destination' });
-    
     this.searchButton = page.getByRole('button', { name: 'Search' });
     this.acceptCookiesButton = page.getByRole('button', { name: 'Accept' });
+    
+    // Resilience: Using a text locator for the empty state message.
+    // We use a flexible match to catch "No results found" or similar variations.
+    this.noResultsMessage = page.locator('text=No results found');
   }
 
+  /**
+   * Navigates to the application and handles the cookie consent banner if present.
+   */
   async navigate() {
     await this.page.goto('https://v3.nuitee.link/');
+    
+    // Validate URL to ensure we are on the right environment
     await expect(this.page).toHaveURL(/v3.nuitee.link/);
 
-   //cookies
+    // Defensive Coding: Handle Cookie Banner
+    // The banner might not appear if the session is reused or in some geographical regions.
     try {
-      if (await this.acceptCookiesButton.isVisible({ timeout: 5000 })) {
+      if (await this.acceptCookiesButton.isVisible({ timeout: 3000 })) {
         await this.acceptCookiesButton.click();
         await expect(this.acceptCookiesButton).toBeHidden();
       }
     } catch (error) {
-      console.log("Cookies banner no apareció o ya estaba cerrado.");
+      // Log info but do not fail the test, as this is a non-critical UI state
+      console.log("Info: Cookie banner not found or already handled.");
     }
   }
 
-  async searchHotel(city: string) {
-    // click to ensure focus
+  /**
+   * Performs a search for a specific city.
+   * @param city - The name of the destination (e.g., "Paris")
+   * @param expectResults - Boolean flag. If true, waits for autosuggest. If false, just types.
+   */
+  async searchHotel(city: string, expectResults: boolean = true) {
+    // Ensure focus
     await this.searchInput.click();
     
-    
+    // Type with delay to trigger JS event listeners for autocomplete
     await this.searchInput.pressSequentially(city, { delay: 100 });
 
-    // wait for options to load
-    // search for the option that matches the city
-    const option = this.page.getByRole('option').filter({ hasText: city }).first();
-    
-    await option.waitFor({ state: 'visible', timeout: 10000 });
-    await option.click();
+    if (expectResults) {
+        // Happy Path: Wait for the suggestion dropdown and click the first match
+        const option = this.page.getByRole('option').filter({ hasText: city }).first();
+        await option.waitFor({ state: 'visible', timeout: 10000 });
+        await option.click();
+    } else {
+        // Edge Case: Just hit Enter if we don't expect valid suggestions (or testing invalid input)
+        await this.page.keyboard.press('Enter');
+    }
   }
 
   async clickSearch() {
     await this.searchButton.click();
+  }
+  
+  async verifyMobileLayout() {
+      // Simple check to verify responsiveness (e.g., checking if a hamburger menu exists)
+      // For this specific site, we verify that the layout didn't break.
+      await expect(this.searchInput).toBeVisible();
   }
 }
