@@ -10,15 +10,12 @@ export class HomePage {
   constructor(page: Page) {
     this.page = page;
 
-    // LOCATORS:
-    // Using 'combobox' role for the main search input as identified in accessibility tree
     this.searchInput = page.getByRole('combobox', { name: 'Enter a destination' });
     this.searchButton = page.getByRole('button', { name: 'Search' });
     this.acceptCookiesButton = page.getByRole('button', { name: 'Accept' });
     
-    // --- AQUÍ ESTÁ EL CAMBIO ---
-    // Fix: The page has multiple elements with this text (one hidden for a11y).
-    // We target the Heading element which is the visible message for the user.
+    // FIX: Targeting the Heading element is the most robust strategy.
+    // It automatically ignores the hidden 'status' span and matches the visible UI (h2).
     this.noResultsMessage = page.getByRole('heading', { name: 'No results found' });
   }
 
@@ -32,6 +29,7 @@ export class HomePage {
     await expect(this.page).toHaveURL(/v3.nuitee.link/);
 
     // Defensive Coding: Handle Cookie Banner
+    // The banner might not appear if the session is reused or in some geographical regions.
     try {
       if (await this.acceptCookiesButton.isVisible({ timeout: 3000 })) {
         await this.acceptCookiesButton.click();
@@ -70,8 +68,13 @@ export class HomePage {
     await this.searchButton.click();
   }
   
-  async verifyMobileLayout() {
-      // Simple check to verify responsiveness
-      await expect(this.searchInput).toBeVisible();
+async verifyMobileLayout() {
+      // Fix: On mobile, the search bar changes from a 'combobox' to a 
+      // static text placeholder acting as a button. 
+      // We verify the text is visible to the user.
+      await expect(this.page.getByText('Enter a destination')).toBeVisible();
+      
+      // Verify search button is also visible
+      await expect(this.searchButton).toBeVisible();
   }
 }

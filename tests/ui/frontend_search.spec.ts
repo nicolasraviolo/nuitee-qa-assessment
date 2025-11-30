@@ -41,10 +41,13 @@ test.describe('Frontend Automation Strategy Implementation', () => {
       await home.navigate();
     });
 
-    await test.step('Search for invalid city "InvalidCity123"', async () => {
-      // We pass 'false' because we don't expect the autosuggest dropdown to find this city
-      await home.searchHotel('InvalidCity123', false); 
-      await home.clickSearch();
+  await test.step('Search for invalid city "InvalidCity123"', async () => {
+       // We pass 'false' to hit Enter instead of clicking a dropdown option.
+       // This usually triggers the search submission automatically.
+       await home.searchHotel('InvalidCity123', false); 
+       
+       // REMOVED: await home.clickSearch(); 
+       // Reason: Pressing Enter often submits the form. Clicking immediately after can cause race conditions.
     });
 
     await test.step('Verify No Results Message', async () => {
@@ -66,11 +69,12 @@ test.describe('Frontend Automation Strategy Implementation', () => {
       await home.navigate();
     });
 
-    await test.step('Verify Core Elements are Visible', async () => {
-      // On mobile, elements often stack or change. We verify the critical path remains accessible.
-      await expect(home.searchInput).toBeVisible();
-      await expect(home.searchButton).toBeVisible();
-      console.log('@responsive Check Success: Search elements visible on mobile viewport.');
+await test.step('Verify Core Elements are Visible', async () => {
+       // On mobile, elements often stack or change. 
+       // We delegate to the POM which handles the responsive DOM differences.
+       await home.verifyMobileLayout();
+       
+       console.log('@responsive Check Success: Search elements visible on mobile viewport.');
     });
   });
 
