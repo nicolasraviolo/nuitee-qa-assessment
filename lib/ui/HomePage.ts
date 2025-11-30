@@ -13,9 +13,6 @@ export class HomePage {
     this.searchInput = page.getByRole('combobox', { name: 'Enter a destination' });
     this.searchButton = page.getByRole('button', { name: 'Search' });
     this.acceptCookiesButton = page.getByRole('button', { name: 'Accept' });
-    
-    // FIX: Targeting the Heading element is the most robust strategy.
-    // It automatically ignores the hidden 'status' span and matches the visible UI (h2).
     this.noResultsMessage = page.getByRole('heading', { name: 'No results found' });
   }
 
@@ -69,12 +66,20 @@ export class HomePage {
   }
   
 async verifyMobileLayout() {
-      // Fix: On mobile, the search bar changes from a 'combobox' to a 
-      // static text placeholder acting as a button. 
       // We verify the text is visible to the user.
       await expect(this.page.getByText('Enter a destination')).toBeVisible();
       
       // Verify search button is also visible
       await expect(this.searchButton).toBeVisible();
+  }
+async selectFirstResult() {
+    // Strategy: Find the first anchor tag that links to a hotel detail page
+    const firstHotelCard = this.page.locator('a[href*="/hotels/"]').first();
+    
+    // Wait for the list to populate and the element to be interactive
+    await firstHotelCard.waitFor({ state: 'visible', timeout: 15000 });
+    
+    // Click to navigate
+    await firstHotelCard.click();
   }
 }
