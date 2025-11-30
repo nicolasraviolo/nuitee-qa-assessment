@@ -1,4 +1,4 @@
-import { APIRequestContext, expect } from '@playwright/test';
+import { APIRequestContext, APIResponse } from '@playwright/test';
 
 export class LiteApiClient {
   readonly request: APIRequestContext;
@@ -9,35 +9,29 @@ export class LiteApiClient {
     this.baseUrl = process.env.BASE_URL || 'https://api.liteapi.travel/v3.0';
   }
 
-  private async getHeaders() {
+  // Helper: Generates headers. Accepts a custom key for negative testing (Security Scenarios).
+  private async getHeaders(customKey?: string) {
     return {
       'Content-Type': 'application/json',
-      'X-API-Key': process.env.API_KEY || ''
+      'X-API-Key': customKey ?? (process.env.API_KEY || '')
     };
   }
 
-  // 1. Fetch Hotels (Endpoint Real: /data/hotels)
-  async getHotels(countryCode: string, cityName: string) {
-    const response = await this.request.get(`${this.baseUrl}/data/hotels`, {
-      headers: await this.getHeaders(),
+  // 1. Fetch Hotels Endpoint
+  async getHotels(countryCode: string, cityName: string, apiKey?: string): Promise<APIResponse> {
+    return await this.request.get(`${this.baseUrl}/data/hotels`, {
+      headers: await this.getHeaders(apiKey),
       params: { 
         countryCode: countryCode, 
         cityName: cityName,
         limit: '10' 
       }
     });
-    
-    // Debug
-    if (!response.ok()) {
-      console.log('Error GetHotels:', await response.text());
-    }
-    expect(response.status()).toBe(200);
-    return await response.json();
   }
 
-  // 2. Get Rates (Endpoint Real: /hotels/rates)
-  async getRates(hotelIds: string[], checkin: string, checkout: string) {
-    const response = await this.request.post(`${this.baseUrl}/hotels/rates`, {
+  // 2. Get Rates Endpoint
+  async getRates(hotelIds: string[], checkin: string, checkout: string): Promise<APIResponse> {
+    return await this.request.post(`${this.baseUrl}/hotels/rates`, {
       headers: await this.getHeaders(),
       data: {
         hotelIds: hotelIds,
@@ -45,59 +39,42 @@ export class LiteApiClient {
         checkout: checkout,
         occupancies: [{ adults: 2, children: [] }],
         currency: "USD",
-        guestNationality: "US" 
+        guestNationality: "US"
       }
     });
-
-    // Debugging Vital: if 400, prints error details
-    if (!response.ok()) {
-        console.log(`Error GetRates (${response.status()}):`, await response.text());
-    }
-
-    expect(response.status()).toBe(200);
-    return await response.json();
   }
 
-// 3. PreBook (Endpoint Real: /rates/prebook)
-  async preBook(rateId: string) {
-    const response = await this.request.post(`${this.baseUrl}/rates/prebook`, {
+  // 3. PreBook Endpoint
+  async preBook(offerId: string): Promise<APIResponse> {
+    return await this.request.post(`${this.baseUrl}/rates/prebook`, {
       headers: await this.getHeaders(),
-      data: { 
-        offerId: rateId  
-      }
+      data: { offerId: offerId }
     });
-
-    if (!response.ok()) {
-      console.log(`Error PreBook (${response.status()}):`, await response.text());
-    }
-
-    expect(response.status()).toBe(200);
-    return await response.json();
   }
 
-  // 4. Book (Endpoint Real: /rates/book)
-  async book(prebookId: string) {
-    const response = await this.request.post(`${this.baseUrl}/rates/book`, {
+  // 4. Book Endpoint
+  async book(prebookId: string, holder?: any): Promise<APIResponse> {
+    // Default guest data for Happy Path if no specific holder is provided
+    const defaultHolder = {
+        firstName: "Test",
+        lastName: "QA",
+        email: "qa@example.com"
+    };
+
+    return await this.request.post(`${this.baseUrl}/rates/book`, {
       headers: await this.getHeaders(),
       data: {
         prebookId: prebookId,
-        holder: {
-            firstName: "Test",
-            lastName: "QA",
-            email: "qa@example.com"
-        },
-        payment: {
-            method: "ACC_CREDIT_CARD"
-        }
+        holder: holder || defaultHolder,
+        payment: { method: "ACC_CREDIT_CARD" }
       }
     });
+  }
 
-    // Debugging Vital: if not ok, prints error details
-    if (!response.ok()) {
-      console.log(`Error Book (${response.status()}):`, await response.text());
-    }
-    // ---------------------
-
-    expect([200, 201]).toContain(response.status());
-    return await response.json();
-  }}
+  // 5. Cancel Endpoint
+  async cancelBooking(bookingId: string): Promise<APIResponse> {
+    return await this.request.delete(`${this.baseUrl}/bookings/${bookingId}`, {
+      headers: await this.getHeaders()
+    });
+  }
+}
